@@ -80,5 +80,7 @@ Our objective is to **maximize the time spent fuzzing those (most progressive) s
 ```python
 import random
 from fuzzingbook.Coverage import population_coverage
+from fuzzingbook.GreyboxFuzzer import Mutator, PowerSchedule, GreyboxFuzzer
+
 ```
 
