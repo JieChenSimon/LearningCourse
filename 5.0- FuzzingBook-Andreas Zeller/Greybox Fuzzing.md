@@ -57,16 +57,28 @@ Note：
 
 ### Power Schedules
 
-Now we introduce a new concept; the power schedule. A power schedule distributes the precious fuzzing time among the seeds in the population. Our objective is to maximize the time spent fuzzing those (most progressive) seeds which lead to higher coverage increase in shorter time.
+Now we introduce a new concept: **the power schedule**. A power schedule distributes the precious fuzzing time among the seeds in the population, meaning that in a population of many inputs, it determines which inputs should receive the highest amount of fuzzing energy and have the greatest chance to evolve and mutate to produce more offspring.
 
-We call the likelihood with which a seed is chosen from the population as the seed's energy. Throughout a fuzzing campaign, we would like to prioritize seeds that are more promising. Simply said, we do not want to waste energy fuzzing non-progressive seeds. We call the procedure that decides a seed's energy as the fuzzer's power schedule. For instance, AFL's schedule assigns more energy to seeds that are shorter, that execute faster, and yield coverage increases more
-often.
+现在我们介绍一个新概念：能量调度。**能量调度负责在种子群中分配宝贵的模糊测试时间，这意味着在包含多个输入的种子群中**，<u>它决定哪些输入应该获得最多的模糊测试能量，并有最大的机会进行演化和变异以产生更多的后代。</u>
 
-现在我们介绍一个新概念：能量调度（power schedule）。能量调度负责在种子群中分配宝贵的模糊测试时间。我们的目标是最大化把时间花在那些最具进展性的种子上，这些种子能在更短时间内带来更高的覆盖率提升。我们将种子从种子群中被选中的可能性称为该种子的能量。
+This concept of power scheduling is extremely important for fuzzing because it defines how efficient a fuzzer will be. The more efficiently a fuzzer distributes its time toward reaching its goals, the higher its chances of actually achieving those goals. To accomplish this, we assign energy values to individual seeds in our population.
 
-在整个模糊测试过程中，我们希望优先选择那些更有潜力的种子。简单来说，我们不想把能量浪费在没有进展的种子上。我们将决定种子能量的过程称为模糊器的能量调度。例如，AFL的调度会给更多能量给那些更短、执行更快、以及更频繁产生覆盖率提升的种子。
+能量调度这个概念对模糊测试极其重要，因为它决定了模糊器的效率。模糊器越能高效地分配时间来达成目标，就越有可能真正实现这些目标。为了实现这一点，我们给种子群中的每个种子都分配能量值。
+
+Our objective is to **maximize the time spent fuzzing those (most progressive) seeds which lead to higher coverage increase in shorter time.** <u>We call the likelihood with which a seed is chosen from the population as the seed's energy.</u> Throughout a fuzzing campaign, we would like to prioritize seeds that are more promising. Simply said, we do not want to waste energy fuzzing non-progressive seeds. We call the procedure that decides a seed's energy as the fuzzer's power schedule. For instance, AFL's schedule assigns more energy to seeds that are shorter, that execute faster, and yield coverage increases more often.
+
+我们的目标是最大化将时间用在那些（最具进展性的）种子上，这些种子能在更短时间内带来更高的覆盖率提升。**我们将种子从种子群中被选中的可能性称为该种子的能量**。在整个模糊测试过程中，我们希望优先选择那些更有希望的种子。简单来说，我们不想把能量浪费在没有进展的种子上。我们将决定种子能量的过程称为模糊器的能量调度。例如，AFL的调度会给更多能量给那些更短、执行更快以及更频繁产生覆盖率提升的种子。
+
+
+
+
+
+
+
+
 
 ```python
-print("hello world")
+import random
+from fuzzingbook.Coverage import population_coverage
 ```
 
