@@ -4,6 +4,8 @@ In the previous chapter, we have introduced **mutation-based fuzzing**, a techni
 
 灰盒测试通过参数化模糊测试的多个方面，使基于变异的模糊测试更加系统化。 灰盒测试通过参数化模糊测试的多个方面，使基于变异的模糊测试更加系统化。
 （灰盒测试通过参数化模糊测试的多个方面，使基于变异的模糊测试更加系统化。 allowing us to actually parameterize many aspects of the fuzzer，变得更加系统和详细）
+----------------------------------------------------------------
+在模糊测试中，population of inputs 指的是当前维护的一组测试输入样本集合。这些输入会被用来生成新的测试用例，通常通过变异（mutation）或交叉（crossover）等操作来产生。
 
 ---------------------------------------------------------------
 ### What does graybox fuzzing mean
