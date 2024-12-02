@@ -70,17 +70,143 @@ Our objective is to **maximize the time spent fuzzing those (most progressive) s
 我们的目标是最大化将时间用在那些（最具进展性的）种子上，这些种子能在更短时间内带来更高的覆盖率提升。**我们将种子从种子群中被选中的可能性称为该种子的能量**。在整个模糊测试过程中，我们希望优先选择那些更有希望的种子。简单来说，我们不想把能量浪费在没有进展的种子上。我们将决定种子能量的过程称为模糊器的能量调度。例如，AFL的调度会给更多能量给那些更短、执行更快以及更频繁产生覆盖率提升的种子。
 
 
-
-
-
-
-
-
-
 ```python
-import random
-from fuzzingbook.Coverage import population_coverage
-from fuzzingbook.GreyboxFuzzer import Mutator, PowerSchedule, GreyboxFuzzer
-
+from fuzzingbook.GreyboxFuzzer import GreyboxFuzzer, FunctionCoverageRunner, Mutator, PowerSchedule, http_program
+# 1. 设置初始种子输入
+seed_input = "http://www.google.com/search?q=fuzzing"
+seeds = [seed_input]
+# 2. 使用库中定义好的类
+mutator = Mutator()
+schedule = PowerSchedule()
+# 3. 初始化灰盒模糊测试器
+greybox_fuzzer = GreyboxFuzzer(seeds=seeds, mutator=mutator, schedule=schedule)
+# 4. 使用库中的示例HTTP程序
+http_runner = FunctionCoverageRunner(http_program)
+# 5. 运行模糊测试
+outcomes = greybox_fuzzer.runs(http_runner, trials=10000)
+# 6. 查看结果
+print("Fuzzing completed!")
+print(f"Number of tests executed: {len(outcomes)}")
+print(f"Final population size: {len(greybox_fuzzer.population)}")
 ```
 
+
+**除了简单的 `PowerSchedule`，我们还可以使用一些高级的能量调度：**
+
+* `AFLFastSchedule` 为不经常执行的"不寻常"路径分配高能量。
+* `AFLGoSchedule` 为接近未覆盖程序位置的路径分配高能量。
+`AFLGoSchedule` 类的构造函数需要一个从每个节点到目标位置的 `distance` 度量，这个度量是通过分析程序代码来确定的。详细信息请参阅本章内容。
+
+
+### AFL灰盒模糊测试详解
+
+#### 1. 高级能量调度方案（Power Schedule）
+
+####  概念解释
+能量调度是指如何分配有限的模糊测试时间到不同的测试用例（种子）上。就像在有限的时间内复习考试，我们会优先复习重点章节一样，模糊测试也需要决定把时间花在哪些测试用例上。
+
+####  三种调度方案详解
+1. **基础调度 (PowerSchedule)**
+```python
+class PowerSchedule:
+    def assignEnergy(self, population: Sequence[Seed]) -> None:
+        """基础版本：所有种子获得相同的能量值"""
+        for seed in population:
+            seed.energy = 1
+```
+简单但效率可能不高，因为它对待所有测试用例都一视同仁。
+
+2. **AFLFastSchedule**
+- 为什么需要：某些程序路径很少被执行到，这些路径可能隐藏着bug
+- 工作原理：对较少执行的路径给予更多测试时间
+- 类比：就像在复习时，对不太熟悉的知识点多花时间
+
+3. **AFLGoSchedule**
+- 特点：考虑代码位置的"距离"概念
+- 原理：优先测试那些接近未覆盖代码的测试用例
+- 类比：像玩游戏时会优先探索离当前位置近的未知区域
+
+#### 2. 变异策略（Mutation）
+
+####  概念解释
+变异是指通过修改现有的测试用例来生成新的测试用例，就像生物进化中的DNA变异。
+
+####  具体实现
+```python
+class Mutator:
+    def __init__(self):
+        """初始化三种基本变异操作"""
+        self.mutators = [
+            self.delete_random_character,  # 随机删除一个字符
+            self.insert_random_character,  # 随机插入一个字符
+            self.flip_random_character     # 随机改变一个字符
+        ]
+    
+    def insert_random_character(self, s: str) -> str:
+        """插入操作：在随机位置插入随机字符"""
+        pos = random.randint(0, len(s))
+        random_character = chr(random.randrange(32, 127))
+        return s[:pos] + random_character + s[pos:]
+```
+
+####  为什么需要变异？
+- 自动生成新的测试用例
+- 探索程序的不同执行路径
+- 可能触发未发现的bug
+
+#### 3. 种子管理（Seed）
+
+####  概念解释
+种子是模糊测试的基础测试用例，就像农作物的种子一样，它们会经过变异产生新的测试用例。
+
+####  实现细节
+```python
+class Seed:
+    def __init__(self, data: str) -> None:
+        self.data = data          # 实际的测试数据
+        self.coverage = set()     # 记录这个种子触发了哪些代码路径
+        self.distance = -1        # 到目标代码的距离
+        self.energy = 0.0         # 被选中进行变异的概率
+```
+
+####  种子的重要属性
+- **coverage**：记录代码覆盖情况
+- **distance**：评估到目标的距离
+- **energy**：决定被选中的机会
+
+####  4. 覆盖率收集（Coverage）
+
+####  概念解释
+覆盖率是指程序中被测试执行到的代码比例。就像检查试卷，我们要知道哪些知识点已经复习到了。
+
+####  示例实现
+```python
+def crashme(s: str) -> None:
+    """一个简单的示例程序，展示如何收集覆盖率"""
+    if len(s) > 0 and s[0] == 'b':    # 路径1
+        if len(s) > 1 and s[1] == 'a': # 路径2
+            if len(s) > 2 and s[2] == 'd': # 路径3
+                if len(s) > 3 and s[3] == '!': # 路径4
+                    raise Exception()
+```
+
+####  覆盖率收集的重要性
+1. 指导测试方向
+2. 评估测试效果
+3. 帮助发现未测试区域
+
+#### 5. 实践应用
+
+#### 完整的测试流程
+```python
+# 1. 设置初始配置
+seed_input = "http://www.google.com/search?q=fuzzing"
+seeds = [seed_input]
+mutator = Mutator()
+schedule = PowerSchedule()
+
+# 2. 创建并运行模糊测试器
+greybox_fuzzer = GreyboxFuzzer(seeds, mutator, schedule)
+http_runner = FunctionCoverageRunner(HTTPExample.http_program)
+outcomes = greybox_fuzzer.runs(http_runner, trials=10000)
+```
