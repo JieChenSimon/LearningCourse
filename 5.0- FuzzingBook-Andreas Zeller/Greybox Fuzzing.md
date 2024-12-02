@@ -1,5 +1,8 @@
 In the previous chapter, we have introduced **mutation-based fuzzing**, a technique that **generates fuzz inputs by applying small mutations to given input**s. In this chapter, we show **how to guide these mutations towards specific goals such as coverage.** The algorithms in this chapter stem from the popular American Fuzzy Lop (AFL) fuzzer, in particular from its AFLFast and AFLGo flavors. We will explore the greybox fuzzing algorithm behind AFL and how we can exploit it to solve various problems for automated vulnerability detection.
 
+this chapter is in this chapter pretty much builds on the insights that we had already from the last chapter namely we are getting coverage we are evolving a population of inputs towards a target but this time we are doing this in a more elaborated fashion by making our fuzzers more parameterized in the sense that we can come up with various algorithms we can come up with various ways to direct our fuzzing towards specific locations and more.
+
+
 本章介绍如何通过特定目标(如覆盖率)来引导基于变异的模糊测试（mutation-based fuzzing）生成测试输入。
 
 灰盒测试通过参数化模糊测试的多个方面，使基于变异的模糊测试更加系统化。 灰盒测试通过参数化模糊测试的多个方面，使基于变异的模糊测试更加系统化。
@@ -21,3 +24,29 @@ A: we distinguish several perspectives on a program depending on how much inform
 3. 介于白盒模糊测试（可获取所有信息）和黑盒模糊测试（几乎无信息）之间的是灰盒模糊测试。灰盒测试能获取有限的信息，这里的"有限"定义比较灵活。通常我们会获取那些容易得到且有通用获取技术的信息，典型的就是程序覆盖率信息 - 即程序的哪些部分被执行了。几乎所有编程语言都支持覆盖率测量，因为这对评估测试质量至关重要 - 如果测试覆盖率只有10%，意味着90%的代码未被执行测试，这表明测试需要大幅改进，因为只有被执行的代码中的bug才可能被发现。正因为几乎所有编程环境都提供了收集运行时覆盖率的方法，且覆盖率数据普遍可得，它成为了灰盒模糊测试中的关键信息。
 
 --------------------------------------------------------------------
+
+### AFL 
+
+AFL is a mutation-based fuzzer. Meaning, AFL generates new inputs by slightly modifying a seed input (i.e., mutation), or by joining the first half of one input with the second half of another (i.e., splicing). 
+
+AFL is **also a greybox fuzzer** (not blackbox nor whitebox). Meaning, AFL leverages coverage-feedback to learn how to reach deeper into the program. It is not entirely blackbox because AFL leverages at least some program analysis. It is not entirely whitebox either because AFL does not build on heavyweight program analysis or constraint solving. Instead, AFL uses lightweight program instrumentation to glean some information about the (branch) coverage of a generated input. If a generated input increases coverage, it is added to the seed corpus for further fuzzing.
+
+
+To instrument a program, AFL injects a piece of code right after every conditional jump instruction. When executed, this so-celled trampoline assigns the exercised branch a unique identifier and increments a counter. that is associater with this branch. For efficiency, only a coarse branch hit count is maintained. In other wards, for each input the fuzzer knows which branches and roughly how often they are exercised. The instrumentation is usually done at compile-time, i.e., when the program source code is compiled te an executable binary. However, it is possible to run AFL on uninstrumented binaries using tools such as a virtual machine (e.g.
+GEMU) or a dynamic instrumentation tool (e.g, Intel PinTool). For Python programs, we can collect coverage information without any instrumentation.
+
+AFL是一个基于变异的模糊测试器。它通过轻微修改种子输入（即变异），或者将一个输入的前半部分与另一个输入的后半部分拼接（即拼接）来生成新的输入。AFL也是一个灰盒模糊测试器（既不是黑盒也不是白盒）。
+
+这意味着AFL利用覆盖率反馈来学习如何深入程序。它不完全是黑盒测试因为AFL至少利用了一些程序分析；也不完全是白盒测试因为AFL不依赖重量级程序分析或约束求解。相反，AFL使用轻量级程序插桩来获取生成输入的（分支）覆盖信息。如果生成的输入增加了覆盖率，它就会被添加到种子语料库中用于进一步测试。
+
+为了插桩程序，AFL在每个条件跳转指令后注入一段代码。执行时，这个所谓的trampoline会为执行的分支分配唯一标识符并增加与该分支相关的计数器。为了效率，只维护粗略的分支命中计数。换句话说，对于每个输入，模糊测试器知道哪些分支被执行以及大致的执行频率。插桩通常在编译时完成，即当程序源代码被编译成可执行二进制文件时。然而，通过使用虚拟机（如QEMU）或动态插桩工具（如Intel PinTool），也可以在未插桩的二进制文件上运行AFL。对于Python程序，我们可以在不需要任何插桩的情况下收集覆盖率信息。
+
+---------------
+Note：
+trampoline（蹦床）在AFL中指的是一段被注入的短小监控代码。它的作用是：
+
+1. 记录分支执行情况
+2. 分配分支ID
+3. 更新执行计数
+
+之所以叫"蹦床"，是因为这段代码执行完后会立即跳回到原程序继续执行，类似于在蹦床上短暂跳起后落回原处的动作。
