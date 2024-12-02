@@ -31,12 +31,11 @@ def main():
     
     # 8. 获取和显示种群信息
     population = greybox_fuzzer.population
-    print('greybox_fuzzer.population[:20]:', population[:20])
 
     print(f"Final population size: {len(population)}")
     
     # 9. 可选：显示发现的有趣输入
-    for idx, input_value in enumerate(population):
+    for idx, input_value in enumerate(population[:20]):
         print(f"Seed {idx}: {input_value}")
 
 
