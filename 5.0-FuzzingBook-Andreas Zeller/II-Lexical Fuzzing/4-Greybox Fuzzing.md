@@ -107,19 +107,65 @@ print(f"Final population size: {len(greybox_fuzzer.population)}")
 
 ####  三种调度方案详解
 1. **基础调度 (PowerSchedule)**
-```python
+```python title="PowerSchedule.py"
 class PowerSchedule:
+    def __init__(self) -> None:
+        """
+        初始化函数
+        path_frequency: 用于记录不同路径的执行频率
+        """
+        self.path_frequency: Dict = {}
+
     def assignEnergy(self, population: Sequence[Seed]) -> None:
-        """基础版本：所有种子获得相同的能量值"""
+        """
+        为每个种子分配能量
+        在基础版本中，每个种子获得相同的能量值1
+        """
         for seed in population:
             seed.energy = 1
+
+    def normalizedEnergy(self, population: Sequence[Seed]) -> List[float]:
+        """
+        对能量值进行归一化处理
+        步骤:
+        1. 收集所有种子的能量值
+        2. 计算总能量
+        3. 将每个能量值除以总能量，得到归一化的值
+        """
+        # 使用map函数获取所有种子的能量值列表
+        energy = list(map(lambda seed: seed.energy, population))
+        
+        # 计算总能量
+        sum_energy = sum(energy)
+        assert sum_energy != 0  # 确保总能量不为0
+        
+        # 归一化处理：每个能量值除以总能量
+        norm_energy = list(map(lambda nrg: nrg / sum_energy, energy))
+        return norm_energy
+
+    def choose(self, population: Sequence[Seed]) -> Seed:
+        """
+        根据归一化后的能量值选择种子
+        步骤:
+        1. 为种群分配能量
+        2. 归一化能量值
+        3. 按照能量权重随机选择种子
+        """
+        self.assignEnergy(population)
+        norm_energy = self.normalizedEnergy(population)
+        # random.choices根据权重选择，返回列表，所以需要[0]获取元素
+        seed: Seed = random.choices(population, weights=norm_energy)[0]
+        return seed
 ```
 简单但效率可能不高，因为它对待所有测试用例都一视同仁。
+
+
 
 2. **AFLFastSchedule**
 - 为什么需要：某些程序路径很少被执行到，这些路径可能隐藏着bug
 - 工作原理：对较少执行的路径给予更多测试时间
 - 类比：就像在复习时，对不太熟悉的知识点多花时间
+- **如何找到程序路径中很少被执行的部分：通过覆盖率分析**
 
 3. **AFLGoSchedule**
 - 特点：考虑代码位置的"距离"概念
@@ -141,12 +187,31 @@ class Mutator:
             self.insert_random_character,  # 随机插入一个字符
             self.flip_random_character     # 随机改变一个字符
         ]
-    
+
+    def delete_random_character(self, s: str) -> str:
+        """Returns s with a random character deleted"""
+        if s == "":
+            return self.insert_random_character(s)
+
+        pos = random.randint(0, len(s) - 1)
+        return s[:pos] + s[pos + 1:]
+
     def insert_random_character(self, s: str) -> str:
         """插入操作：在随机位置插入随机字符"""
         pos = random.randint(0, len(s))
         random_character = chr(random.randrange(32, 127))
         return s[:pos] + random_character + s[pos:]
+
+    def flip_random_character(self, s: str) -> str:
+        """Returns s with a random bit flipped in a random position"""
+        if s == "":
+            return self.insert_random_character(s)
+
+        pos = random.randint(0, len(s) - 1)
+        c = s[pos]
+        bit = 1 << random.randint(0, 6)
+        new_c = chr(ord(c) ^ bit)
+        return s[:pos] + new_c + s[pos + 1:]
 ```
 
 ####  为什么需要变异？
