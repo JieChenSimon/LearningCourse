@@ -50,3 +50,22 @@ trampoline（蹦床）在AFL中指的是一段被注入的短小监控代码。�
 3. 更新执行计数
 
 之所以叫"蹦床"，是因为这段代码执行完后会立即跳回到原程序继续执行，类似于在蹦床上短暂跳起后落回原处的动作。
+
+
+### Power Schedules
+
+Now we introduce a new concept; the power schedule. A power schedule distributes the precious fuzzing time among the seeds in the population. Our objective is to maximize the time spent fuzzing those (most progressive) seeds which lead to higher coverage increase in shorter time.
+
+We call the likelihood with which a seed is chosen from the population as the seed's energy. Throughout a fuzzing campaign, we would like to prioritize seeds that are more promising. Simply said, we do not want to waste energy fuzzing non-progressive seeds. We call the procedure that decides a seed's energy as the fuzzer's power schedule. For instance, AFL's schedule assigns more energy to seeds that are shorter, that execute faster, and yield coverage increases more
+often.
+
+现在我们介绍一个新概念：能量调度（power schedule）。能量调度负责在种子群中分配宝贵的模糊测试时间。我们的目标是最大化把时间花在那些最具进展性的种子上，这些种子能在更短时间内带来更高的覆盖率提升。我们将种子从种子群中被选中的可能性称为该种子的能量。
+
+在整个模糊测试过程中，我们希望优先选择那些更有潜力的种子。简单来说，我们不想把能量浪费在没有进展的种子上。我们将决定种子能量的过程称为模糊器的能量调度。例如，AFL的调度会给更多能量给那些更短、执行更快、以及更频繁产生覆盖率提升的种子。
+
+
+
+```python fold title:test
+
+
+```
