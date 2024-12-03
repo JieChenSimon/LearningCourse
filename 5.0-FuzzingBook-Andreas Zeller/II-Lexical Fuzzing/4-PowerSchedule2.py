@@ -38,6 +38,7 @@ class PowerSchedule:
         """选择种子"""
         self.assignEnergy(population)
         norm_energy = self.normalizedEnergy(population)
+        # 每个seed的能量作为每个seed的权重，即每个seed被选中的概率
         selected_seed = random.choices(population, weights=norm_energy)[0]
         return selected_seed
 
@@ -88,6 +89,7 @@ def run_basic_schedule_demo():
     # 收集覆盖率
     for seed in seeds:
         print(f"\n种子 '{seed.data}' 覆盖的位置:")
+        # 用被记录进入的条件位置有哪些来模拟覆盖率，这里seed.coverage是一个集合,如果只记录了一个位置，那么就是一个元素的集合，即只覆盖了一个条件位置
         seed.coverage = example_program(seed.data)
         for loc in seed.coverage:
             print(f"- 函数: {loc[0]}, 行: {loc[1]}")
