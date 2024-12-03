@@ -38,10 +38,12 @@ class PowerSchedule:
         """选择种子"""
         self.assignEnergy(population)
         norm_energy = self.normalizedEnergy(population)
-        return random.choices(population, weights=norm_energy)[0]
+        selected_seed = random.choices(population, weights=norm_energy)[0]
+        return selected_seed
 
 class ImprovedPowerSchedule(PowerSchedule):
     """改进的能量调度策略"""
+    """之前的能量调度策略直接将能量值设置为1，这里根据覆盖率分配能量"""
     def assignEnergy(self, population: Sequence[Seed]) -> None:
         """根据覆盖率分配能量"""
         for seed in population:
