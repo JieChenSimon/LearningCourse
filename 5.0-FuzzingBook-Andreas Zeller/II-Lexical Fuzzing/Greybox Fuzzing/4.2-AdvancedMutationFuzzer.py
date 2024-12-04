@@ -3,7 +3,8 @@ from typing import List, Set, Any, Tuple, Dict, Union
 from fuzzingbook.GreyboxFuzzer import Seed, Mutator, PowerSchedule
 import random
 import time
-
+from fuzzingbook.MutationFuzzer import FunctionCoverageRunner
+import matplotlib.pyplot as plt
 class AdvancedMutationFuzzer(Fuzzer):
     """Base class for mutation-based fuzzing."""
 
@@ -50,7 +51,13 @@ class AdvancedMutationFuzzer(Fuzzer):
         self.inputs.append(self.inp)
         return self.inp
     
-
+def crashme(s: str) -> None:
+    if len(s) > 0 and s[0] == 'b':
+        if len(s) > 1 and s[1] == 'a':
+            if len(s) > 2 and s[2] == 'd':
+                if len(s) > 3 and s[3] == '!':
+                    raise Exception()
+                
 if __name__ == '__main__':
     n = 30000
     seed_input = "ELonMusk"
@@ -59,5 +66,30 @@ if __name__ == '__main__':
     print(blackbox_fuzzer.fuzz())
     print(blackbox_fuzzer.fuzz())
     print(blackbox_fuzzer.fuzz())
+    # 默认的PowerSchedule,即把每个种子的能量（权重）都为1
+    # blackbox_fuzzer = AdvancedMutationFuzzer([seed_input], Mutator(), PowerSchedule())
+
+    start = time.time()
+    crashme_runner = FunctionCoverageRunner(crashme)
+    blackbox_fuzzer.runs(crashme_runner, trials=n)
+    # or
+    # blackbox_fuzzer.runs(FunctionCoverageRunner(crashme), trials=n)
+    end = time.time()
+    print(f"It took the blackbox mutation-based fuzzer {end - start:.2f} seconds to generate and execute {n} inputs.")
+    
+    # Measure and plot coverage
+    all_coverage, blackbox_coverage = population_coverage(blackbox_fuzzer.inputs, crashme)
+    bb_max_coverage = max(blackbox_coverage)
+    print(f"The blackbox mutation-based fuzzer achieved a maximum coverage of {bb_max_coverage} statements.")
+    
+    # Plot coverage over time
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(blackbox_coverage)), blackbox_coverage, label="Blackbox Fuzzer")
+    plt.title("Coverage over time")
+    plt.xlabel("Number of inputs")
+    plt.ylabel("Coverage")
+    plt.grid()
+    plt.legend()
+    plt.show()
 
 
