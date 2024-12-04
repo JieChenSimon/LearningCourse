@@ -5,6 +5,7 @@ import random
 import time
 from fuzzingbook.MutationFuzzer import FunctionCoverageRunner
 import matplotlib.pyplot as plt
+from fuzzingbook.Coverage import population_coverage
 class AdvancedMutationFuzzer(Fuzzer):
     """Base class for mutation-based fuzzing."""
 
@@ -60,7 +61,7 @@ def crashme(s: str) -> None:
                 
 if __name__ == '__main__':
     n = 30000
-    seed_input = "ELonMusk"
+    seed_input = "good"
     blackbox_fuzzer = AdvancedMutationFuzzer([seed_input], Mutator(), PowerSchedule())
     start = time.time()
     print(blackbox_fuzzer.fuzz())
@@ -82,14 +83,14 @@ if __name__ == '__main__':
     bb_max_coverage = max(blackbox_coverage)
     print(f"The blackbox mutation-based fuzzer achieved a maximum coverage of {bb_max_coverage} statements.")
     
-    # Plot coverage over time
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(len(blackbox_coverage)), blackbox_coverage, label="Blackbox Fuzzer")
-    plt.title("Coverage over time")
-    plt.xlabel("Number of inputs")
-    plt.ylabel("Coverage")
-    plt.grid()
-    plt.legend()
-    plt.show()
+    # # Plot coverage over time
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(range(len(blackbox_coverage)), blackbox_coverage, label="Blackbox Fuzzer")
+    # plt.title("Coverage over time")
+    # plt.xlabel("Number of inputs")
+    # plt.ylabel("Coverage")
+    # plt.grid()
+    # plt.legend()
+    # plt.show()
 
 
