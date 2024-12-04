@@ -2,6 +2,7 @@ from fuzzingbook.Fuzzer import Fuzzer
 from typing import List, Set, Any, Tuple, Dict, Union
 from fuzzingbook.GreyboxFuzzer import Seed, Mutator, PowerSchedule
 import random
+import time
 
 class AdvancedMutationFuzzer(Fuzzer):
     """Base class for mutation-based fuzzing."""
@@ -50,9 +51,13 @@ class AdvancedMutationFuzzer(Fuzzer):
         return self.inp
     
 
+if __name__ == '__main__':
+    n = 30000
+    seed_input = "ELonMusk"
+    blackbox_fuzzer = AdvancedMutationFuzzer([seed_input], Mutator(), PowerSchedule())
+    start = time.time()
+    print(blackbox_fuzzer.fuzz())
+    print(blackbox_fuzzer.fuzz())
+    print(blackbox_fuzzer.fuzz())
 
-seed_input = "ELonMusk"
-mutation_fuzzer = AdvancedMutationFuzzer([seed_input], Mutator(), PowerSchedule())
-print(mutation_fuzzer.fuzz())
-print(mutation_fuzzer.fuzz())
-print(mutation_fuzzer.fuzz())
+
