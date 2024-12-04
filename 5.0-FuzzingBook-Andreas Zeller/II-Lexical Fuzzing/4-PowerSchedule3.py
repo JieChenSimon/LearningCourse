@@ -1,9 +1,11 @@
+"""相对应之前的PowerSchedule2.py, 主要的改变是在example_program函数中不需要手动定义locations = set()，然后使用locations.add(("example_program", 1))来加入了"""
+
 from fuzzingbook.Coverage import Location
 from fuzzingbook.MutationFuzzer import FunctionCoverageRunner
 from typing import Set, Union, List, Sequence, Dict
 import random
 
-"""相对应之前的PowerSchedule2.py, 主要的改变是在example_program函数中不需要手动定义locations = set()，然后使用locations.add(("example_program", 1))来加入了"""
+
 class Seed:
    def __init__(self, data: str) -> None:
        self.data = data
@@ -66,7 +68,7 @@ def run_basic_schedule_demo():
    
    for seed in seeds:
        print(f"\n种子 '{seed.data}' 覆盖的位置:")
-       runner.run(seed.data)
+       runner.run(seed.data) #这里通过使用FunctionCoverageRunner构建的runner, 把seed.data作为输入传入example_program
        seed.coverage = set(runner.coverage())
        for loc in seed.coverage:
            print(f"- 函数: {loc[0]}, 行: {loc[1]}")
