@@ -82,15 +82,16 @@ if __name__ == '__main__':
     all_coverage, blackbox_coverage = population_coverage(blackbox_fuzzer.inputs, crashme)
     bb_max_coverage = max(blackbox_coverage)
     print(f"The blackbox mutation-based fuzzer achieved a maximum coverage of {bb_max_coverage} statements.")
+
     
     # # Plot coverage over time
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(range(len(blackbox_coverage)), blackbox_coverage, label="Blackbox Fuzzer")
-    # plt.title("Coverage over time")
-    # plt.xlabel("Number of inputs")
-    # plt.ylabel("Coverage")
-    # plt.grid()
-    # plt.legend()
-    # plt.show()
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(blackbox_coverage)), blackbox_coverage, label="Blackbox Fuzzer")
+    plt.title("Coverage over time")
+    plt.xlabel("Number of inputs")
+    plt.ylabel("Coverage")
+    plt.grid()
+    plt.legend()
+    plt.show()
 
 
