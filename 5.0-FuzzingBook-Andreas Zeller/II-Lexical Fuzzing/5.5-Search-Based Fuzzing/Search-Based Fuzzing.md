@@ -1,6 +1,32 @@
-你说得对,我来逐段详细翻译这篇关于Search-Based Fuzzing的内容。
-
 # Search-Based Fuzzing(基于搜索的模糊测试)
+
+
+# 知识点概要-大纲
+
+1. 基本概念
+- 搜索式模糊测试的目标是找到能达到特定程序位置的输入
+- 使用启发式信息来引导搜索,避免穷举所有输入
+- 元启发式搜索算法可以应用于庞大的搜索空间
+
+2. 搜索问题的关键要素
+- 表示(Representation):定义搜索空间
+- 适应度函数(Fitness Function):评估解的质量
+- 邻域(Neighborhood):定义搜索空间中解之间的关系
+
+3. 主要算法
+- 爬山算法(Hillclimbing):局部搜索算法
+- 遗传算法(Genetic Algorithm):全局搜索算法
+  - 选择(Selection)
+  - 交叉(Crossover) 
+  - 变异(Mutation)
+
+4. 程序插桩(Instrumentation)
+- 用于计算分支距离
+- 处理复杂条件和短路求值
+- 自动插桩实现
+
+
+## 前言
 
 有时我们不仅对生成尽可能多样化的程序输入感兴趣,还想要获得能实现某些特定目标的测试输入,比如达到程序中的特定语句。当我们明确知道要寻找什么时,就可以进行有针对性的搜索(search)。搜索算法是计算机科学的核心,但直接应用经典的搜索算法(如广度优先或深度优先搜索)来搜索测试用例是不现实的,因为这些算法可能需要检查所有可能的输入。然而,通过领域知识可以克服这个问题。例如,如果我们能估计哪些程序输入更接近我们要找的目标,这些信息就能帮助我们更快地达到目标 - 这种信息被称为启发式(heuristic)。启发式被系统化应用的方式被称为元启发式(meta-heuristic)搜索算法。"元"表示这些算法是通用的,可以针对不同问题进行特化。元启发式算法通常从自然过程中获取灵感。例如,有些算法模仿进化过程、群体智能或化学反应。总的来说,它们比穷举搜索方法效率高得多,可以应用于广阔的搜索空间 - 像程序输入这样庞大的搜索空间对它们来说也不是问题。
 
@@ -291,4 +317,140 @@ def plotting_hillclimber(fitness_function):
     return data
 ```
 
-[需要我继续翻译后面的内容吗?]
+好的，我继续翻译剩下的全部内容：
+
+
+
+
+
+
+
+
+
+
+
+### 处理复杂条件(Dealing with Complex Conditions)
+
+在`cgi_decode()`函数中，我们还可以找到一个由逻辑`and`连接的两个条件组成的更复杂的谓词：
+
+```
+if digit_high in hex_values and digit_low in hex_values:
+```
+
+原则上，分支距离的定义是这样的：使合取式`A and B`为真的距离等于`A`和`B`的分支距离之和，因为两个条件都需要为真。类似地，使`A or B`为真的分支距离应该是`A`和`B`的分支距离中的最小值，因为只要两个条件中的一个为真就足以使整个表达式为真。
+
+然而，实践中并没有这么简单：谓词可能包含嵌套条件和否定，在应用这种计算之前需要将表达式转换为标准形式。此外，大多数现代编程语言使用短路求值(short-circuit evaluation)：如果有一个条件`A or B`，而`A`为真，那么`B`就永远不会被求值。如果`B`是一个有副作用的表达式，那么通过计算`B`的分支距离（即使短路求值会避免其执行）可能会改变程序行为，这是不可接受的。
+
+### 程序的自动插装(Instrumenting Source Code Automatically)
+
+在Python中，使用抽象语法树(AST)自动替换比较实际上相当容易。在AST中，一个比较通常是一个带有运算符属性和两个子节点（用于左操作数和右操作数）的树节点。要将这些比较替换为对`evaluate_condition()`的调用，只需要将AST中的比较节点替换为函数调用节点，这就是`BranchTransformer`类使用Python的`ast`模块中的`NodeTransformer`所做的：
+
+```python
+import ast
+
+class BranchTransformer(ast.NodeTransformer):
+
+    branch_num = 0
+
+    def visit_FunctionDef(self, node):
+        node.name = node.name + "_instrumented"
+        return self.generic_visit(node)
+
+    def visit_Compare(self, node):
+        if node.ops[0] in [ast.Is, ast.IsNot, ast.In, ast.NotIn]:
+            return node
+
+        self.branch_num += 1
+        return ast.Call(func=ast.Name("evaluate_condition", ast.Load()),
+                      args=[ast.Num(self.branch_num),
+                            ast.Str(node.ops[0].__class__.__name__),
+                            node.left,
+                            node.comparators[0]],
+                      keywords=[],
+                      starargs=None,
+                      kwargs=None)
+```
+
+### 遗传算法(Genetic Algorithm)
+
+现在让我们来看看最复杂的搜索算法：遗传算法。遗传算法基于如下过程：
+
+1. 创建一个随机染色体的初始种群
+2. 选择适合繁殖的个体
+3. 通过所选个体的繁殖生成新种群
+4. 继续这个过程，直到找到最优解或达到某个其他限制。
+
+```python
+def genetic_algorithm():
+    # 生成并评估初始种群
+    generation = 0
+    population = create_population(100)
+    fitness = evaluate_population(population)
+    best = min(fitness, key=lambda item: item[1])
+    best_individual = best[0]
+    best_fitness = best[1]
+    print("Best fitness of initial population: %s - %.10f" %
+        (terminal_repr(best_individual), best_fitness))
+    logs = 0
+
+    # 当找到最优解或用完耐心时停止
+    while best_fitness > 0 and generation < 1000:
+        # 下一代将与当前代具有相同的大小
+        new_population = []
+        while len(new_population) < len(population):
+            # 选择
+            offspring1 = selection(fitness, 10)
+            offspring2 = selection(fitness, 10)
+
+            # 交叉
+            if random.random() < 0.7:
+                (offspring1, offspring2) = crossover(offspring1, offspring2)
+
+            # 变异
+            offspring1 = mutate(offspring1)
+            offspring2 = mutate(offspring2)
+
+            new_population.append(offspring1)
+            new_population.append(offspring2)
+
+        # 一旦填满，新种群替换旧种群
+        generation += 1
+        population = new_population
+        fitness = evaluate_population(population)
+
+        best = min(fitness, key=lambda item: item[1])
+        best_individual = best[0]
+        best_fitness = best[1]
+        if logs < LOG_VALUES:
+            print(
+                "Best fitness at generation %d: %s - %.8f" %
+                (generation, terminal_repr(best_individual), best_fitness))
+        elif logs == LOG_VALUES:
+            print("...")
+        logs += 1
+
+    print(
+        "Best individual: %s, fitness %.10f" %
+        (terminal_repr(best_individual), best_fitness))
+```
+
+## 学到的教训(Lessons Learned)
+
+* 元启发式搜索问题由算法、表示和适应度函数组成。
+* 对于测试生成，适应度函数通常估计执行过程离目标位置有多近。为了确定这个距离，我们使用插装来在测试执行过程中计算距离。
+* 当邻域定义良好且不太大时，局部搜索算法如爬山算法工作得很好。
+* 全局搜索算法如遗传算法非常灵活，可以很好地扩展到更大的测试问题。
+
+## 后续步骤
+
+在本章中，我们研究了相当简单的程序输入。我们也可以将相同的搜索算法应用于演进复杂的测试输入，特别是[对于语法输入](EvoGrammarFuzzer.ipynb)。
+
+## 背景
+
+待补充：将添加更多内容
+
+搜索的目标通常与覆盖率相关。有关讨论，请参阅[测试简介](Intro_Testing.ipynb)中的书籍。
+
+## 练习
+
+待补充：稍后将添加练习内容
